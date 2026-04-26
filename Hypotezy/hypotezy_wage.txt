@@ -1,0 +1,201 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[slovak]{babel}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\geometry{margin=2.5cm}
+
+\title{\textbf{Ekonometrický projekt -- LS 2025/2026}\\
+\large Analýza mzdovej štruktúry pracovníkov (Mincerov model)}
+\author{Meno1 Priezvisko1 \and Meno2 Priezvisko2 \and Meno3 Priezvisko3}
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\section{Úvod}
+% ============================================================
+
+\subsection*{Dáta a zdroj}
+Dataset \textit{wage1} pochádza z balíka \texttt{wooldridge} pre jazyk R
+(Wooldridge, \textit{Introductory Econometrics}, 7. vyd.).
+Obsahuje $n = 526$ pozorovaní z prieskumu CPS (\textit{Current Population Survey})
+z roku 1976, ktorý zozbierala skupina H. Farbera na MIT.
+Každé pozorovanie zodpovedá jednému zamestnanému pracovníkovi a meria
+jeho hodinovú mzdu spolu so vzdelávacími a pracovnými charakteristikami.
+
+\subsection*{Premenné}
+\begin{itemize}
+  \item $Y$ -- \texttt{lwage}: logaritmus hodinovej mzdy ($\log(\text{USD/h})$)
+        \quad \textit{[závislá premenná]}
+  \item $X_1$ -- \texttt{educ}: roky formálneho vzdelania (0--18)
+  \item $X_2$ -- \texttt{exper}: roky celkových pracovných skúseností
+  \item $X_3$ -- \texttt{tenure}: roky u súčasného zamestnávateľa
+  \item $X_4$ -- \texttt{numdep}: počet závislých osôb v domácnosti
+\end{itemize}
+
+\textit{Poznámka:} Závislá premenná $Y = \log(\texttt{wage})$ je logaritmovaná
+priamo v datasete (\texttt{lwage}). Binárne premenné (\texttt{female},
+\texttt{married}, \texttt{nonwhite} a i.) sú z modelu vylúčené -- pracujeme
+výhradne so spojitými premennými.
+
+\subsection*{Očakávaná závislosť}
+\texttt{lwage} rastie s:
+\begin{itemize}
+  \item \textbf{educ} ($X_1$) -- vzdelanie zvyšuje ľudský kapitál a produktivitu,
+        kladný vplyv,
+  \item \textbf{exper} ($X_2$) -- pracovné skúsenosti zvyšujú produktivitu,
+        kladný vplyv (klesajúce výnosy v kvadratickom rozšírení),
+  \item \textbf{tenure} ($X_3$) -- firmou špecifické skúsenosti a lojalita
+        sú odmeňované, kladný vplyv.
+\end{itemize}
+Vplyv $X_4$ (\texttt{numdep}) je a priori neurčitý: viac závislých osôb
+môže motivovať vyšší zárobkový výkon, ale zároveň znižuje flexibilitu pracovníka.
+
+% ============================================================
+\section{Formulácia regresného modelu}
+% ============================================================
+
+Uvažujeme lineárny regresný model:
+\begin{equation}
+  Y_i = \beta_0 + \beta_1 X_{1i} + \beta_2 X_{2i} + \beta_3 X_{3i}
+      + \beta_4 X_{4i} + \varepsilon_i,
+  \quad i = 1, \ldots, 526,
+\end{equation}
+kde $\varepsilon_i \overset{iid}{\sim} \mathcal{N}(0, \sigma^2)$.
+
+V maticovom zápise:
+\[
+  \mathbf{Y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon},
+  \quad \boldsymbol{\varepsilon} \sim \mathcal{N}(\mathbf{0},\, \sigma^2 \mathbf{I}_n),
+\]
+kde $\mathbf{X} \in \mathbb{R}^{526 \times 5}$ obsahuje stĺpec jednotiek a hodnoty
+regresorov, $\boldsymbol{\beta} = (\beta_0, \ldots, \beta_4)^\top \in \mathbb{R}^5$.
+
+% ============================================================
+\section{Povinná úloha -- odhady parametrov}
+% ============================================================
+
+\subsection*{OLS odhad vektora parametrov}
+\[
+  \hat{\boldsymbol{\beta}} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{Y}.
+\]
+Koeficient $\hat{\beta}_1$ vyjadruje, o koľko percent sa zmení priemerná hodinová
+mzda, ak sa vzdelanie zvýši o 1 rok (ceteris paribus) -- ide o tzv. \textit{výnos zo vzdelania}.
+Kladné $\hat{\beta}_2$ a $\hat{\beta}_3$ by potvrdili teóriu ľudského kapitálu.
+
+\subsection*{Odhad rozptylu}
+\[
+  \hat{\sigma}^2 = \frac{RSS}{n - p} = \frac{\sum_{i=1}^{n}(Y_i - \hat{Y}_i)^2}{n - p},
+  \quad n = 526,\ p = 5.
+\]
+
+\subsection*{Rozklad súčtu štvorcov}
+\[
+  TSS = ESS + RSS, \qquad
+  R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}.
+\]
+
+% ============================================================
+\section{Povinne voliteľné úlohy}
+% ============================================================
+
+% ------------------------------------------------------------
+\subsection{Kategória A -- Test hypotézy o kontraste}
+% ------------------------------------------------------------
+
+\subsubsection*{Motivácia}
+Celkové pracovné skúsenosti (\texttt{exper}, $X_2$) a firmou špecifická prax
+(\texttt{tenure}, $X_3$) sú obe merané v rokoch a obe by podľa teórie ľudského
+kapitálu mali kladne vplývať na mzdu.
+Otázka je, či je mzdové ohodnotenie jedného roka všeobecných skúseností rovnaké
+ako ohodnotenie jedného roka praxe u konkrétneho zamestnávateľa -- teda či $\beta_2 = \beta_3$.
+Ak áno, Mincerova rovnica nerozlišuje tieto dva typy ľudského kapitálu.
+Ak nie, firmou špecifická prax je odmeňovaná inak ako všeobecná skúsenosť.
+
+\subsubsection*{Formulácia hypotéz}
+\begin{align*}
+  H_0 &: \beta_2 - \beta_3 = 0
+        \quad \text{(všeobecné skúsenosti a tenure majú rovnaký vplyv na log mzdu)}, \\
+  H_1 &: \beta_2 - \beta_3 \neq 0.
+\end{align*}
+
+\subsubsection*{Testovacia štatistika}
+Ide o test lineárneho kontrastu $\mathbf{a}^\top\boldsymbol{\beta} = r$,
+kde $\mathbf{a} = (0,\,0,\,1,\,-1,\,0)^\top$ a $r = 0$:
+\[
+  t = \frac{\mathbf{a}^\top\hat{\boldsymbol{\beta}} - r}
+           {\hat{\sigma}\sqrt{\mathbf{a}^\top(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{a}}}
+  \;\underset{H_0}{\sim}\; t(n - p), \quad n - p = 521.
+\]
+
+\subsubsection*{Rozhodovanie}
+Zamietame $H_0$ na hladine $\alpha = 0.05$, ak $|t| > t_{0.025}(521) \approx 1.964$.
+
+\subsubsection*{Interpretácia}
+Ak $H_0$ nezamietame, model štatisticky nerozlíši oba typy skúseností --
+z hľadiska mzdy sú ekvivalentné.
+Ak $H_0$ zamietame, jeden typ ľudského kapitálu je hodnotený vyššie.
+Typicky sa očakáva $\hat{\beta}_3 > \hat{\beta}_2$: firmou špecifická prax
+je odmeňovaná vyšším príplatkom ako všeobecná skúsenosť na trhu práce.
+
+% ------------------------------------------------------------
+\subsection{Kategória B -- Predikčné intervaly}
+% ------------------------------------------------------------
+
+\subsubsection*{Formulácia}
+Pre pracovníka s parametrami
+$\mathbf{x}_0^* = (1,\, 12,\, 10,\, 5,\, 2)^\top$
+(stredoškolské vzdelanie -- 12 rokov, 10 rokov skúseností, 5 rokov u zamestnávateľa,
+2 závislé osoby) zostrojíme $95\,\%$ predikčný interval:
+\[
+  \hat{Y}_0 \;\pm\; t_{0.025}(n - p)\cdot\hat{\sigma}
+  \sqrt{1 + \mathbf{x}_0^{*\top}(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{x}_0^*}.
+\]
+
+% ------------------------------------------------------------
+\subsection{Kategória C -- Test heteroskedasticity}
+% ------------------------------------------------------------
+
+\subsubsection*{Motivácia}
+Rozptyl mzdových reziduálov môže závisieť od vzdelania alebo skúseností:
+vysoko vzdelaní pracovníci majú širšiu mzdovú distribúciu (väčší rozptyl)
+ako menej vzdelaní. Tento jav (heteroskedasticita) by porušil predpoklad
+$\mathrm{Var}(\varepsilon_i) = \sigma^2$.
+
+\subsubsection*{Formulácia hypotéz -- Breusch-Pagan test}
+\begin{align*}
+  H_0 &: \mathrm{Var}(\varepsilon_i) = \sigma^2 \quad \forall\, i
+        \quad \text{(homoskedasticita)}, \\
+  H_1 &: \mathrm{Var}(\varepsilon_i) \text{ závisí od regresorov}.
+\end{align*}
+
+\subsubsection*{Testovacia štatistika}
+\[
+  LM = n \cdot R^2_{\text{aux}} \;\underset{H_0}{\sim}\; \chi^2(k), \quad k = 4.
+\]
+
+% ============================================================
+\section{Záver}
+% ============================================================
+
+Analyzovali sme logaritmus hodinovej mzdy pomocou OLS regresného modelu
+so 4 spojitými premennými (educ, exper, tenure, numdep).
+\begin{itemize}
+  \item \textbf{Povinná úloha}: OLS odhadom sme kvantifikovali výnosy zo vzdelania
+        a skúseností. Kladné $\hat{\beta}_1, \hat{\beta}_2, \hat{\beta}_3$ by potvrdili
+        teóriu ľudského kapitálu.
+  \item \textbf{Kategória A}: T-testom sme overili, či sú všeobecné pracovné
+        skúsenosti a firmou špecifická prax mzdovo ekvivalentné ($\beta_2 = \beta_3$).
+  \item \textbf{Kategória B}: Pre konkrétneho pracovníka (SŠ vzdelanie, 10 rokov praxe,
+        5 rokov tenure, 2 závislé osoby) sme zostrojili $95\,\%$ predikčný interval
+        log mzdy.
+  \item \textbf{Kategória C}: Breusch-Pagan a White testom sme preverili predpoklad
+        homoskedasticity -- vzdelanie je potenciálnym zdrojom heteroskedasticity.
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,206 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[slovak]{babel}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\geometry{margin=2.5cm}
+
+\title{\textbf{Ekonometrický projekt -- LS 2025/2026}\\
+\large Analýza energetickej efektívnosti budov}
+\author{Meno1 Priezvisko1 \and Meno2 Priezvisko2 \and Meno3 Priezvisko3}
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\section{Úvod}
+% ============================================================
+
+\subsection*{Dáta a zdroj}
+Dataset \textit{Energy Efficiency} pochádza z UCI Machine Learning Repository
+(\texttt{https://archive.ics.uci.edu/dataset/242/energy+efficiency}).
+Obsahuje $n = 768$ pozorovaní získaných simuláciou v nástroji Ecotect
+(Tsanas \& Xifara, 2012). Každé pozorovanie zodpovedá jednej konfigurácii
+obytnej budovy — kombinácia geometrických a stavebných parametrov —
+a meria sa požadovaný výkon vykurovania a chladenia.
+
+\subsection*{Premenné}
+\begin{itemize}
+  \item $Y$ -- heating load (kWh/m\textsuperscript{2}) \quad \textit{[závislá premenná]}
+  \item $X_1$ -- relative compactness (pomer objemu k povrchu, bezrozm.)
+  \item $X_2$ -- wall area (plocha stien, m\textsuperscript{2})
+  \item $X_3$ -- roof area (plocha strechy, m\textsuperscript{2})
+  \item $X_4$ -- overall height (výška budovy: 3.5 alebo 7.0 m)
+  \item $X_5$ -- orientation (orientácia: 2=S, 3=W, 4=N, 5=E)
+  \item $X_6$ -- glazing area (podiel zasklenia z plochy podlahy: 0, 0.1, 0.25, 0.4)
+  \item $X_7$ -- glazing area distribution (rozmiestnenie okien: 0--5)
+\end{itemize}
+
+\textit{Poznámka:} Premenná surface area bola z modelu vylúčená z dôvodu
+perfektnej multikolinearity s relative compactness (korelácia $r = -0.99$).
+Matica $\mathbf{X}^\top\mathbf{X}$ by bola singulárna a OLS odhad by neexistoval.
+
+\subsection*{Očakávaná závislosť}
+Heating load rastie s:
+\begin{itemize}
+  \item \textbf{glazing area} ($X_6$) -- viac skla znamená vyššie tepelné straty, kladný vplyv,
+  \item \textbf{wall area} ($X_2$) -- viac stien = väčšie straty, kladný vplyv.
+\end{itemize}
+Heating load klesá s:
+\begin{itemize}
+  \item \textbf{relative compactness} ($X_1$) -- kompaktnejšia budova (napr. kváder)
+        má menší povrch na jednotku objemu, záporný vplyv,
+  \item \textbf{overall height} ($X_4$) -- vyššia budova je pri rovnakom objeme
+        kompaktnejšia, záporný vplyv.
+\end{itemize}
+Premenné $X_5$ (orientation) a $X_7$ (glazing distribution) by nemali mať
+štatisticky významný vplyv na \textit{heating load} -- budova stráca teplo
+rovnomerne zo všetkých strán bez ohľadu na orientáciu alebo rozmiestnenie okien
+(na rozdiel od cooling load, kde orientácia hrá rolu).
+
+% ============================================================
+\section{Formulácia regresného modelu}
+% ============================================================
+
+Uvažujeme lineárny regresný model:
+\begin{equation}
+  Y_i = \beta_0 + \beta_1 X_{1i} + \beta_2 X_{2i} + \beta_3 X_{3i}
+      + \beta_4 X_{4i} + \beta_5 X_{5i} + \beta_6 X_{6i}
+      + \beta_7 X_{7i} + \varepsilon_i,
+  \quad i = 1, \ldots, 768,
+\end{equation}
+kde $\varepsilon_i \overset{iid}{\sim} \mathcal{N}(0, \sigma^2)$.
+
+V maticovom zápise:
+\[
+  \mathbf{Y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon},
+  \quad \boldsymbol{\varepsilon} \sim \mathcal{N}(\mathbf{0},\, \sigma^2 \mathbf{I}_n),
+\]
+kde $\mathbf{X} \in \mathbb{R}^{768 \times 8}$ obsahuje stĺpec jednotiek a hodnoty
+regresorov, $\boldsymbol{\beta} = (\beta_0, \ldots, \beta_7)^\top \in \mathbb{R}^8$.
+
+% ============================================================
+\section{Povinná úloha -- odhady parametrov}
+% ============================================================
+
+\subsection*{OLS odhad vektora parametrov}
+\[
+  \hat{\boldsymbol{\beta}} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{Y}.
+\]
+Koeficient $\hat{\beta}_1$ vyjadruje, o koľko kWh/m\textsuperscript{2} sa zmení
+priemerný heating load, ak sa relative compactness zvýši o 1 jednotku (ceteris paribus).
+Záporné znamienko $\hat{\beta}_1$ by potvrdilo fyzikálny predpoklad: kompaktnejšia
+budova potrebuje menej energie na vykurovanie.
+
+\subsection*{Odhad rozptylu}
+\[
+  \hat{\sigma}^2 = \frac{RSS}{n - p} = \frac{\sum_{i=1}^{n}(Y_i - \hat{Y}_i)^2}{n - p},
+  \quad n = 768,\ p = 8.
+\]
+
+\subsection*{Rozklad súčtu štvorcov}
+\[
+  TSS = ESS + RSS, \qquad
+  R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}.
+\]
+
+% ============================================================
+\section{Povinne voliteľné úlohy}
+% ============================================================
+
+% ------------------------------------------------------------
+\subsection{Kategória A -- Test hypotézy o kontraste}
+% ------------------------------------------------------------
+
+\subsubsection*{Motivácia}
+Wall area ($X_2$) a roof area ($X_3$) sú obe plochy obálky budovy, cez ktoré
+uniká teplo. Otázka je, či je tepelná strata na $1\,\text{m}^2$ steny rovnaká
+ako na $1\,\text{m}^2$ strechy -- teda či $\beta_2 = \beta_3$.
+Ak áno, model môžeme zjednodušiť zavedením celkovej plochy obálky.
+Ak nie, steny a strecha majú štatisticky odlišné tepelné vlastnosti
+(iná hrúbka izolácie, materiál).
+
+\subsubsection*{Formulácia hypotéz}
+\begin{align*}
+  H_0 &: \beta_2 - \beta_3 = 0
+        \quad \text{(wall area a roof area majú rovnaký vplyv na heating load per m}^2\text{)}, \\
+  H_1 &: \beta_2 - \beta_3 \neq 0.
+\end{align*}
+
+\subsubsection*{Testovacia štatistika}
+Ide o test lineárneho kontrastu $\mathbf{a}^\top\boldsymbol{\beta} = r$,
+kde $\mathbf{a} = (0,\,0,\,1,\,-1,\,0,\,0,\,0,\,0)^\top$ a $r = 0$:
+\[
+  t = \frac{\mathbf{a}^\top\hat{\boldsymbol{\beta}} - r}
+           {\hat{\sigma}\sqrt{\mathbf{a}^\top(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{a}}}
+  \;\underset{H_0}{\sim}\; t(n - p), \quad n - p = 760.
+\]
+
+\subsubsection*{Rozhodovanie}
+Zamietame $H_0$ na hladine $\alpha = 0.05$, ak $|t| > t_{0.025}(760) \approx 1.963$.
+
+\subsubsection*{Interpretácia}
+Ak $H_0$ nezamietame, steny a strecha prispievajú k heating load rovnakým
+dielom na $\text{m}^2$ -- ich tepelné vlastnosti sú štatisticky nerozlíšiteľné.
+Ak $H_0$ zamietame, jedna z plôch izoluje lepšie, čo môže odrážať typickú
+stavebnú prax (strecha býva lepšie izolovaná ako steny).
+
+% ------------------------------------------------------------
+\subsection{Kategória B -- Predikčné intervaly}
+% ------------------------------------------------------------
+
+\subsubsection*{Formulácia}
+Pre budovu s parametrami
+$\mathbf{x}_0^* = (1,\, 0.75,\, 318.5,\, 183.75,\, 7.0,\, 3,\, 0.25,\, 3)^\top$
+(priemerná kompaktná budova, stredné zasklenie, výška 7~m) zostrojíme $95\,\%$ predikčný interval:
+\[
+  \hat{Y}_0 \;\pm\; t_{0.025}(n - p)\cdot\hat{\sigma}
+  \sqrt{1 + \mathbf{x}_0^{*\top}(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{x}_0^*}.
+\]
+
+% ------------------------------------------------------------
+\subsection{Kategória C -- Test heteroskedasticity}
+% ------------------------------------------------------------
+
+\subsubsection*{Motivácia}
+Overall height ($X_4$) nadobúda iba dve hodnoty (3.5 m a 7.0 m) -- ide teda
+o de facto binárnu premennú. Nízke a vysoké budovy môžu mať systematicky odlišný
+rozptyl heating load: vysoké budovy (7 m) majú väčšiu variabilitu konfigurácie
+(rôzne kombinácie glazing, wall area), čo môže viesť k heteroskedasticite.
+
+\subsubsection*{Formulácia hypotéz -- Breusch-Pagan test}
+\begin{align*}
+  H_0 &: \mathrm{Var}(\varepsilon_i) = \sigma^2 \quad \forall\, i
+        \quad \text{(homoskedasticita)}, \\
+  H_1 &: \mathrm{Var}(\varepsilon_i) \text{ závisí od regresorov}.
+\end{align*}
+
+\subsubsection*{Testovacia štatistika}
+\[
+  LM = n \cdot R^2_{\text{aux}} \;\underset{H_0}{\sim}\; \chi^2(k), \quad k = 7.
+\]
+
+% ============================================================
+\section{Záver}
+% ============================================================
+
+Analyzovali sme heating load budov pomocou OLS regresného modelu so 7 premennými.
+Premenná surface area bola vylúčená z dôvodu perfektnej multikolinearity
+s relative compactness.
+\begin{itemize}
+  \item \textbf{Povinná úloha}: OLS odhadom sme kvantifikovali vplyv geometrie
+        budovy na heating load. Záporný $\hat{\beta}_1$ potvrdzuje, že kompaktnejšie
+        budovy spotrebujú menej energie.
+  \item \textbf{Kategória A}: F-testom sme overili, či orientation ($X_5$) a glazing
+        distribution ($X_7$) sú v modeli štatisticky opodstatnené.
+  \item \textbf{Kategória B}: Pre konkrétnu budovu (priemerné parametre, stredné
+        zasklenie, výška 7 m) sme zostrojili $95\,\%$ predikčný interval heating load.
+  \item \textbf{Kategória C}: Breusch-Pagan a White testom sme overili predpoklad
+        homoskedasticity -- overall height je potenciálnym zdrojom heteroskedasticity.
+\end{itemize}
+
+\end{document}
