@@ -1,0 +1,230 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[slovak]{babel}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\geometry{margin=2.5cm}
+
+\title{\textbf{Ekonometrický projekt -- LS 2025/2026}\\
+\large Analýza cien nehnuteľností na Taiwane}
+\author{Meno1 Priezvisko1 \and Meno2 Priezvisko2 \and Meno3 Priezvisko3}
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\section{Úvod}
+% ============================================================
+
+\subsection*{Dáta a zdroj}
+Datasetu \textit{Real Estate Valuation} pochádza z UCI Machine Learning Repository
+(\texttt{https://archive.ics.uci.edu/ml/datasets/Real+estate+valuation+data+set}).
+Obsahuje $n = 414$ pozorovaní o cenách nehnuteľností na Taiwane (región Sindian, Nové Tchaj-pej)
+za obdobie júl 2012 -- jún 2013.
+
+\subsection*{Premenné}
+\begin{itemize}
+  \item $Y$ -- cena nehnuteľnosti za jednotku plochy (10 000 TWD/ping)
+  \item $X_1$ -- vek domu (roky)
+  \item $X_2$ -- vzdialenosť k najbližšej stanici MHD (metre)
+  \item $X_3$ -- počet obchodov v pešej dostupnosti
+  \item $X_4$ -- zemepisná šírka (latitude)
+  \item $X_5$ -- zemepisná dĺžka (longitude)
+\end{itemize}
+
+\subsection*{Očakávaná závislosť}
+Predpokladáme, že cena nehnuteľnosti závisí najmä od:
+\begin{itemize}
+  \item \textbf{vzdialenosti od MHD} ($X_2$): čím bližšie stanica, tým vyššia cena -- záporný vzťah,
+  \item \textbf{počtu obchodov} ($X_3$): lepšia občianska vybavenosť zvyšuje atraktivitu -- kladný vzťah,
+  \item \textbf{veku domu} ($X_1$): staršie domy majú spravidla nižšiu hodnotu -- záporný vzťah.
+\end{itemize}
+Keďže $X_2$ nadobúda veľmi pravostranné hodnoty (test KS ukázal silnú nenormalitu),
+použijeme logaritmickú transformáciu $\ln(X_2)$.
+
+% ============================================================
+\section{Formulácia regresného modelu}
+% ============================================================
+
+Uvažujeme lineárny regresný model:
+\begin{equation}
+  Y_i = \beta_0 + \beta_1 X_{1i} + \beta_2 \ln(X_{2i}) + \beta_3 X_{3i} + \varepsilon_i,
+  \quad i = 1, \ldots, 414,
+\end{equation}
+kde $\varepsilon_i \overset{iid}{\sim} \mathcal{N}(0, \sigma^2)$.
+
+V maticovom zápise:
+\[
+  \mathbf{Y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon},
+  \quad \boldsymbol{\varepsilon} \sim \mathcal{N}(\mathbf{0},\, \sigma^2 \mathbf{I}_n).
+\]
+
+% ============================================================
+\section{Povinná úloha -- odhady parametrov}
+% ============================================================
+
+\subsection*{OLS odhad}
+Odhad metodou najmenších štvorcov (MNŠ):
+\[
+  \hat{\boldsymbol{\beta}} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{Y}.
+\]
+
+\subsection*{Odhad rozptylu}
+\[
+  \hat{\sigma}^2 = \frac{RSS}{n - p} = \frac{\sum_{i=1}^n (Y_i - \hat{Y}_i)^2}{n - p},
+\]
+kde $p = 4$ je počet odhadovaných parametrov (vrátane $\beta_0$).
+
+\subsection*{Rozklad súčtu štvorcov}
+\[
+  TSS = ESS + RSS
+\]
+\[
+  \underbrace{\sum_{i=1}^n (Y_i - \bar{Y})^2}_{TSS}
+  = \underbrace{\sum_{i=1}^n (\hat{Y}_i - \bar{Y})^2}_{ESS}
+  + \underbrace{\sum_{i=1}^n (Y_i - \hat{Y}_i)^2}_{RSS}
+\]
+
+\subsection*{Koeficient determinácie}
+\[
+  R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS} \in [0, 1].
+\]
+$R^2$ vyjadruje podiel variability závislej premennej $Y$ vysvetlený regresným modelom.
+
+% ============================================================
+\section{Povinne voliteľné úlohy}
+% ============================================================
+
+% ------------------------------------------------------------
+\subsection{Kategória A -- Test hypotézy o významnosti regresie}
+% ------------------------------------------------------------
+
+\subsubsection*{Formulácia hypotéz}
+Testujeme celkovú štatistickú významnosť regresného modelu:
+\begin{align*}
+  H_0 &: \beta_1 = \beta_2 = \beta_3 = 0
+       \quad \text{(žiadny regresor nevysvetľuje } Y\text{)}, \\
+  H_1 &: \exists\, j \in \{1,2,3\} \text{ také, že } \beta_j \neq 0.
+\end{align*}
+
+\subsubsection*{Testovacia štatistika}
+\[
+  F = \frac{ESS / (p-1)}{RSS / (n-p)} \sim F(p-1,\, n-p) \quad \text{za platnosti } H_0,
+\]
+kde $p - 1 = 3$ a $n - p = 410$.
+
+\subsubsection*{Rozhodovanie}
+Hypotézu $H_0$ zamietame na hladine $\alpha$, ak:
+\[
+  F > F_{\alpha}(p-1,\, n-p),
+\]
+alebo ekvivalentne ak $p\text{-hodnota} < \alpha$.
+
+\subsubsection*{Interpretácia}
+Ak zamietame $H_0$, aspoň jedna vysvetľujúca premenná (vek domu, vzdialenosť od MHD,
+počet obchodov) má štatisticky významný vplyv na cenu nehnuteľnosti.
+
+% ------------------------------------------------------------
+\subsection{Kategória B -- Predikčné intervaly}
+% ------------------------------------------------------------
+
+\subsubsection*{Formulácia}
+Pre novú (budúcu) pozorovaciu jednotku $\mathbf{x}_0^* = (1, x_1^*, \ln(x_2^*), x_3^*)^\top$
+chceme zostrojiť interval, ktorý s pravdepodobnosťou $1-\alpha$ pokryje skutočnú hodnotu $Y_0^*$:
+\[
+  P\bigl(Y_0^* \in [\hat{Y}_0 - d,\; \hat{Y}_0 + d]\bigr) = 1 - \alpha.
+\]
+
+\subsubsection*{Bodový odhad}
+\[
+  \hat{Y}_0 = \mathbf{x}_0^{*\top} \hat{\boldsymbol{\beta}}.
+\]
+
+\subsubsection*{Predikčný interval}
+\[
+  \hat{Y}_0 \;\pm\; t_{\alpha/2}(n-p)\cdot \hat{\sigma}
+  \sqrt{1 + \mathbf{x}_0^{*\top}(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{x}_0^*},
+\]
+kde člen $\sqrt{1 + \mathbf{x}_0^{*\top}(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{x}_0^*}$
+zahŕňa neistotu odhadu parametrov \textit{aj} náhodnosť budúceho pozorovania.
+
+\subsubsection*{Interpretácia}
+Predikčný interval je vždy širší ako interval spoľahlivosti pre strednú hodnotu,
+pretože navyše pokrýva variabilitu samotného nového pozorovania.
+Konkrétne: pre nehnuteľnosť s danými charakteristikami očakávame s $95\,\%$ istotou,
+že jej cena bude v intervale $[\hat{Y}_0 - d,\; \hat{Y}_0 + d]$ (v 10 000 TWD/ping).
+
+% ------------------------------------------------------------
+\subsection{Kategória C -- Test heteroskedasticity}
+% ------------------------------------------------------------
+
+\subsubsection*{Motivácia}
+Kolmogorov-Smirnovov test ukázal, že premenná $X_2$ (vzdialenosť od MHD) má silne
+nenormálne rozdelenie ($KS = 0.2405$, $p \approx 0$). Predpokladáme, že rozptyl
+reziduálov môže závisieť od hodnôt regresorov -- teda môže byť prítomná heteroskedasticita.
+
+\subsubsection*{Formulácia hypotéz -- Breusch-Pagan test}
+\begin{align*}
+  H_0 &: \text{Var}(\varepsilon_i) = \sigma^2 \quad \forall\, i
+        \quad \text{(homoskedasticita)}, \\
+  H_1 &: \text{Var}(\varepsilon_i) = \sigma^2 h(\mathbf{x}_i^\top \boldsymbol{\gamma})
+        \quad \text{(heteroskedasticita)}.
+\end{align*}
+
+\subsubsection*{Postup testu}
+\begin{enumerate}
+  \item Odhadneme pôvodný model a získame rezíduá $\hat{\varepsilon}_i$.
+  \item Odhadneme pomocný regresný model:
+        $\hat{\varepsilon}_i^2 = \gamma_0 + \gamma_1 X_{1i} + \gamma_2 \ln(X_{2i})
+        + \gamma_3 X_{3i} + u_i.$
+  \item Vypočítame testovací štatistiku Breusch-Pagan (LM):
+        \[
+          LM = n \cdot R^2_{\text{aux}} \;\underset{H_0}{\sim}\; \chi^2(k),
+        \]
+        kde $k = 3$ je počet regresorov v pomocnom modeli.
+\end{enumerate}
+
+\subsubsection*{Rozhodovanie}
+Hypotézu $H_0$ zamietame, ak $LM > \chi^2_\alpha(k)$, resp. ak $p\text{-hodnota} < \alpha$.
+
+\subsubsection*{Doplnok -- White test}
+Ako robustnejšiu alternatívu aplikujeme Whiteov test, ktorý nevyžaduje predpoklad
+o funkcii $h(\cdot)$ a zahŕňa aj kvadratické členy a interakcie:
+\[
+  \hat{\varepsilon}_i^2 = \gamma_0 + \sum_j \gamma_j X_{ji}
+  + \sum_j \delta_j X_{ji}^2 + \sum_{j<k} \theta_{jk} X_{ji}X_{ki} + u_i.
+\]
+
+\subsubsection*{Interpretácia}
+Ak zamietame $H_0$, rozptyl chybových členov nie je konštantný -- OLS odhady sú
+stále nestranné, ale \textbf{nie sú BLUE} a štandardné chyby sú skreslené.
+Riešením je použitie heteroskedasticky robustných štandardných chýb (White HC).
+
+% ============================================================
+\section{Záver}
+% ============================================================
+
+V projekte sme analyzovali ceny nehnuteľností na Taiwane pomocou lineárneho regresného modelu.
+
+\begin{itemize}
+  \item \textbf{Povinná úloha}: OLS odhadom sme získali koeficienty $\hat{\beta}_0, \ldots, \hat{\beta}_3$
+        a ich interpretácie. Vypočítali sme $R^2$, $RSS$, $ESS$, $TSS$.
+  \item \textbf{Kategória A -- F-test}: Testom celkovej významnosti regresie sme overili,
+        či model ako celok štatisticky vysvetľuje variabilitu cien nehnuteľností.
+  \item \textbf{Kategória B -- Predikčné intervaly}: Pre konkrétne nehnuteľnosti sme zostrojili
+        $95\,\%$ predikčné intervaly, ktoré kvantifikujú neistotu individuálnej predpovede.
+  \item \textbf{Kategória C -- Test heteroskedasticity}: Breusch-Pagan a White testom
+        sme overili predpoklad konštantného rozptylu reziduálov.
+\end{itemize}
+
+Výsledky sú interpretované nielen technicky, ale aj vecne -- pre čitateľa bez hlbšej
+znalosti ekonometrie: cena nehnuteľnosti rastie s dostupnosťou MHD a obchodov,
+klesá so vzdialenosťou od dopravnej infraštruktúry a stárnutím budovy.
+Prípadná heteroskedasticita poukazuje na to, že vplyv týchto faktorov nie je rovnako
+silný vo všetkých cenových segmentoch trhu.
+
+\end{document}
