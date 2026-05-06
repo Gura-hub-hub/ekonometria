@@ -51,33 +51,6 @@ Zamietame H0 ak `|T| > qt(0.975, n-k)`.
 T² = F (ekvivalentné s F-testom pre q=1).  
 `summary(model)` dáva t-štatistiky pre každý parameter priamo.
 
-### Ďalšie možnosti kategórie A (pre referenziu)
-
-**Test významnosti regresie** – H0: β₁ = β₂ = ... = 0 (všetky slope = 0)
-```r
-R <- rbind(c(0,1,0), c(0,0,1))   # pre model s 2 regresory
-r <- c(0, 0); q <- nrow(R)
-F <- (1/q) * t(R%*%betaHAT-r) %*% solve(R%*%solve(t(X)%*%X)%*%t(R)) %*% (R%*%betaHAT-r) / s2
-1 - pf(F, q, n-k)   # p-hodnota — totéž ako F-stat v summary(model)
-```
-
-**Test submodelu** – H0: submodel je dostačujúci (niektoré β = 0)
-```r
-submodel <- lm(Y ~ x1, data = data)
-anova(submodel, model)   # F' test cez RSS
-
-# manuálne:
-Fprime <- ((RSSsub - RSS) / q) / (RSS / (n-k))
-```
-
-**Test normality rezíduí** – H0: rezíduá ~ N(0, σ²)
-```r
-ks.test(epsilonHAT, "pnorm", mean = 0, sd = sqrt(var(epsilonHAT)))
-qqnorm(epsilonHAT); qqline(epsilonHAT)
-```
-
----
-
 ## Kategória B — zvolená: Bonferroniho simultánne IS
 
 ### Bonferroniho simultánne intervaly spoľahlivosti
@@ -101,30 +74,6 @@ c(betaHAT[2] - B1, betaHAT[2] + B1)   # Bonferroni IS pre beta_1
 
 Rozdiel oproti obyčajným IS: používa kvantil `qt(1 - α/(2p))` namiesto `qt(1 - α/2)` → intervaly sú širšie, ale spoľahlivosť dvojice IS je ≥ 95%.
 
-### Ďalšie možnosti kategórie B (pre referenciu)
-
-**IS pre kontrast** – interval pre `a'β`
-```r
-K <- qt(1 - alpha/2, df = n-k) * sqrt(s2 * t(a) %*% solve(t(X)%*%X) %*% a)
-c(t(a)%*%betaHAT - K,  t(a)%*%betaHAT + K)
-```
-
-**Predikčný interval** pre novú hodnotu Y pri `x_new`
-```r
-a <- c(1, x_new_1, x_new_2)   # vrátane interceptu
-Yhat <- t(a) %*% betaHAT
-
-K_PI <- qt(1 - alpha/2, df = n-k) * sqrt(s2 * (1 + t(a)%*%solve(t(X)%*%X)%*%a))
-c(Yhat - K_PI, Yhat + K_PI)
-```
-
-**Intervalový odhad strednej hodnoty** (bez +1 pod odmocninou):
-```r
-K_IS <- qt(1 - alpha/2, df = n-k) * sqrt(s2 * t(a)%*%solve(t(X)%*%X)%*%a)
-c(Yhat - K_IS, Yhat + K_IS)
-```
-
----
 
 ## Kategória C — zvolená: test heteroskedasticity
 
@@ -155,38 +104,6 @@ RSS_art0   <- summary(lm(epsilonHAT^2 ~ 1))$sigma^2 * (n - 1)
 Fprime <- ((RSS_art0 - RSS_art) / (cosi-1)) / (RSS_art / (n-cosi))
 qf(0.95, df1 = cosi-1, df2 = n-cosi)
 ```
-
-*Pozor na dummy premenné:* ak je v modeli dummy, artificial model obsahuje duplikáty (napr. Byt² = Byt) → odčítaj počet duplikátov od `cosi`.
-
-### Ak je heteroskedasticita prítomná: sandwich estimátor
-
-Namiesto `s²·(X'X)⁻¹` použijeme robustnú (sandwich) kovarianciu.
-
-```r
-library(sandwich)
-sand0 <- vcovHC(model, type = "HC0")   # Ω̂ = diag(εhat²)
-sand1 <- vcovHC(model, type = "HC1")   # korekcia n/(n-k)
-sand2 <- vcovHC(model, type = "HC2")   # korekcia 1/(1-hᵢᵢ)
-```
-
-**Waldov test W** (nahrádza F-test, asymptoticky ~ χ²(q)):
-```r
-W <- t(R%*%betaHAT-r) %*% solve(R%*%sand0%*%t(R)) %*% (R%*%betaHAT-r)
-1 - pchisq(W, q)
-```
-
-**t-verzia pre 1 parameter** (asymptoticky ~ N(0,1)):
-```r
-U <- (t(a)%*%betaHAT - r) / sqrt(t(a)%*%sand0%*%a)
-2 * (1 - pnorm(abs(U)))
-```
-
-| Typ   | Ω̂ diagonála         | Použitie                    |
-|-------|----------------------|-----------------------------|
-| const | s²                   | homoskedasticita (klasika)  |
-| HC0   | εhat²                | základný White              |
-| HC1   | εhat² · n/(n−k)      | malé vzorky                 |
-| HC2   | εhat² / (1−hᵢᵢ)     | ešte robustnejší            |
 
 ---
 
