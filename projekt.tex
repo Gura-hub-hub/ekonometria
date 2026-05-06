@@ -1,0 +1,219 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[slovak]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{parskip}
+\usepackage{hyperref}
+\geometry{top=2cm, bottom=2cm, left=2.5cm, right=2.5cm}
+
+\title{\textbf{Projekt z Ekonometrie LS 2025/2026}\\
+\large Faktory šťastia v európskych krajinách}
+\author{Meno Priezvisko\quad Meno Priezvisko\quad Meno Priezvisko\\
+\small Ročník: \quad Odbor: }
+\date{}
+
+\begin{document}
+\maketitle
+
+%---------------------------------------------------------------
+\section*{1. Úvod}
+
+Dáta pochádzajú zo \textit{World Happiness Report 2015}
+(zdroj: \texttt{happiness\_europe.txt}) a obsahujú $n = 50$
+európskych krajín. Závislá premenná je \texttt{Happiness\_Score} ---
+celkové skóre šťastia na stupnici 0--10. Vysvetľujúce premenné sú:
+
+\begin{itemize}\itemsep0pt
+  \item \textbf{Economy} --- HDP na obyvateľa (log),
+  \item \textbf{Family} --- miera sociálnej podpory,
+  \item \textbf{Health} --- stredná dĺžka zdravého života,
+  \item \textbf{Freedom} --- sloboda životných rozhodnutí.
+\end{itemize}
+
+Očakávame \textit{kladný} vplyv všetkých premenných na šťastie:
+bohatšie, sociálne súdržné krajiny s dlhšou zdravou dĺžkou života
+a vyššou mierou slobody by mali vykazovať vyššie skóre šťastia.
+
+%---------------------------------------------------------------
+\section*{2. Formulácia regresného modelu}
+
+Predpokladáme klasický lineárny regresný model (MNS):
+\[
+  \text{Happiness}_i = \beta_0 + \beta_1 \cdot \text{Family}_i
+  + \beta_2 \cdot \text{Economy}_i
+  + \beta_3 \cdot \text{Health}_i
+  + \beta_4 \cdot \text{Freedom}_i + \varepsilon_i,
+\]
+kde $\varepsilon_i \sim \mathcal{N}(0,\sigma^2)$ sú i.i.d. chyby,
+$i = 1,\ldots,50$. Parametre sú odhadnuté metódou najmenších štvorcov
+(MNS): $\hat{\boldsymbol{\beta}} = (X^\top X)^{-1} X^\top Y$.
+
+%---------------------------------------------------------------
+\section*{3. Povinná úloha: odhady parametrov}
+
+\subsection*{Odhady $\hat{\beta}$ a ich interpretácia}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Parameter & Odhad & Std. chyba & $t$-štatistika & $p$-hodnota \\
+\midrule
+$\hat{\beta}_0$ (intercept) & $1{,}6834$ & $0{,}6187$ & $2{,}721$ & $0{,}009$ \\
+$\hat{\beta}_1$ (Family)    & $1{,}1237$ & $0{,}4765$ & $2{,}358$ & $0{,}023$ \\
+$\hat{\beta}_2$ (Economy)   & $0{,}9736$ & $0{,}5285$ & $1{,}842$ & $0{,}072$ \\
+$\hat{\beta}_3$ (Health)    & $0{,}9509$ & $1{,}0309$ & $0{,}922$ & $0{,}361$ \\
+$\hat{\beta}_4$ (Freedom)   & $2{,}5565$ & $0{,}5527$ & $4{,}625$ & $<0{,}001$ \\
+\bottomrule
+\end{tabular}
+\caption{Odhady MNS ($n=50$, $k=5$, $df = 45$).}
+\end{table}
+
+\textbf{Interpretácia:} Nárast indexu slobody o 1 jednotku zvýši
+skóre šťastia priemerne o $2{,}56$ bodu (ceteris paribus) --- najsilnejší
+efekt spomedzi sledovaných faktorov. Koeficient pri \textit{Family}
+($1{,}12$) aj pri \textit{Economy} ($0{,}97$) sú štatisticky
+významné resp.\ takmer významné; koeficient pri \textit{Health}
+($0{,}95$) nie je štatisticky signifikantný.
+
+\subsection*{Odhad $\hat{\sigma}^2$ a miera zhody}
+
+\[
+  \hat{\sigma}^2 = \frac{RSS}{n-k} = \frac{10{,}8734}{45} = 0{,}2416,
+  \qquad \hat{\sigma} = 0{,}4916.
+\]
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{cccc}
+\toprule
+$RSS$ & $ESS$ & $TSS$ & $R^2$ \\
+\midrule
+$10{,}8734$ & $34{,}2553$ & $45{,}1287$ & $0{,}7591$ \\
+\bottomrule
+\end{tabular}
+\caption{Rozklad variability ($TSS = ESS + RSS$).}
+\end{table}
+
+Model vysvetľuje $75{,}9\,\%$ variability skóre šťastia
+($R^2 = 0{,}7591$), čo považujeme za dobrú zhodu.
+
+%---------------------------------------------------------------
+\section*{4. Kategória A: Test hypotézy o kontraste}
+
+Testujeme lineárne kontrasty $H_0\colon a^\top\beta = r$
+pomocou $t$-štatistiky
+\[
+  T = \frac{a^\top\hat{\beta} - r}{\sqrt{\hat{\sigma}^2 \cdot
+  a^\top(X^\top X)^{-1}a}} \;\sim\; t(n-k).
+\]
+Zamietame $H_0$ na hladine $\alpha = 0{,}05$, ak $|T| > t_{0{,}975}(45) = 2{,}014$.
+
+\medskip
+\textbf{Kontrast 1:} $H_0\colon \beta_{\text{Health}} = 2\beta_{\text{Economy}}$,
+t.j.\ $a^\top = (0,0,-2,1,0)$, $r=0$.
+
+\[
+  T_1 = -0{,}5105, \quad p\text{-hodnota} = 0{,}6122.
+\]
+\textbf{Záver:} $H_0$ \textit{nezamietame}. Dáta neposkytujú dostatok
+dôkazov na to, aby sme tvrdili, že vplyv zdravia je dvojnásobkom
+vplyvu ekonomiky.
+
+\medskip
+\textbf{Kontrast 2:} $H_0\colon \beta_{\text{Family}} = \beta_{\text{Economy}} + \beta_{\text{Freedom}}$,
+t.j.\ $a^\top = (0,1,-1,0,-1)$, $r=0$.
+
+\[
+  T_2 = -2{,}1511, \quad p\text{-hodnota} = 0{,}0369.
+\]
+\textbf{Záver:} $H_0$ \textit{zamietame} ($p < 0{,}05$). Vplyv rodiny
+nie je súčtom vplyvov ekonomiky a slobody --- sloboda a ekonomika
+spoločne pôsobia na šťastie silnejšie ako samotná rodina.
+
+%---------------------------------------------------------------
+\section*{5. Kategória B: Bonferroniho simultánne IS}
+
+Pre $m = 3$ kontrasty súčasne zaručíme celkovú spoľahlivosť $\geq 95\,\%$
+Bonferroniho korekciou: každý IS používa kvantil
+$t_{1-\alpha/(2m)}(n-k) = t_{0{,}9917}(45) \approx 2{,}459$.
+IS pre kontrast $a^\top\beta$ má tvar
+$\bigl[a^\top\hat{\beta} \pm 2{,}459\cdot\hat{\sigma}\sqrt{a^\top(X^\top X)^{-1}a}\bigr]$.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{llccc}
+\toprule
+Kontrast & Ekonomická otázka & $\hat{a}^\top\hat{\beta}$ & Dolná & Horná \\
+\midrule
+$\beta_4 - \beta_1$ & Sloboda vs.\ rodina   & $1{,}4328$ & $[$ viď R $]$ & $[$ viď R $]$ \\
+$\beta_4 - \beta_2$ & Sloboda vs.\ ekonomika & $1{,}5829$ & $[$ viď R $]$ & $[$ viď R $]$ \\
+$\beta_1 - \beta_2$ & Rodina vs.\ ekonomika  & $0{,}1501$ & $[$ viď R $]$ & $[$ viď R $]$ \\
+\bottomrule
+\end{tabular}
+\caption{Bonferroniho simultánne IS ($\alpha = 0{,}05$, $m=3$).}
+\end{table}
+
+\textbf{Interpretácia:} Ak dolná hranica IS je kladná, prvý faktor
+má štatisticky väčší vplyv. Pre kontrasty K1 a K2 (sloboda vs.\ ostatné)
+očakávame kladný interval --- sloboda je dominantným faktorom.
+Pre K3 (rodina vs.\ ekonomika) IS pravdepodobne obsahuje nulu,
+čo zodpovedá blízkym odhadom $\hat{\beta}_1 \approx \hat{\beta}_2$.
+
+%---------------------------------------------------------------
+\section*{6. Kategória C: Test heteroskedasticity (Whiteov test)}
+
+Overujeme, či platí predpoklad homoskedasticity:
+$H_0\colon \mathrm{Var}(\varepsilon_i) = \sigma^2$ pre všetky $i$.
+
+\textbf{Postup:} (1) odhadneme model a získame reziduá $\hat{\varepsilon}$;
+(2) regredujeme $\hat{\varepsilon}^2$ na všetky regressory, ich štvorce
+a krížové členy (artificial model); (3) testovacia štatistika
+$n \cdot R^2_{\text{art}} \xrightarrow{d} \chi^2(c-1)$,
+kde $c = k(k+1)/2 = 15$ (pre $k=5$).
+
+\[
+  H_0\text{ zamietame, ak } n \cdot R^2_{\text{art}} > \chi^2_{0{,}95}(14) = 23{,}685.
+\]
+
+Výsledky (z R skriptu):
+
+\medskip
+\begin{tabular}{lcc}
+\toprule
+& Asymptotický test ($n \cdot R^2$) & Exaktný test ($F'$) \\
+\midrule
+Hodnota štatistiky & $[$ viď R $]$ & $[$ viď R $]$ \\
+Kritická hodnota   & $23{,}685$ & $[$ viď R $]$ \\
+$p$-hodnota        & $[$ viď R $]$ & $[$ viď R $]$ \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\textbf{Záver:} Ak $H_0$ zamietame, chyby merania sú heteroskedastické
+a štandardné chyby odhadov $\hat{\beta}$ sú skreslené.
+V takom prípade použijeme robustné (Whiteove) štandardné chyby
+(sandwich estimátor \texttt{vcovHC(model, type="HC0")}) pri ďalšom testovaní.
+
+%---------------------------------------------------------------
+\section*{7. Záver}
+
+Odhadli sme lineárny regresný model šťastia pre 50 európskych krajín.
+Model dosahuje $R^2 = 0{,}76$, čo naznačuje solídnu vysvetľovaciu silu.
+\textbf{Sloboda} ($\hat{\beta}_4 = 2{,}56$) a \textbf{rodina}
+($\hat{\beta}_1 = 1{,}12$) sú štatisticky najvýznamnejšími faktormi.
+Zdravie ($\hat{\beta}_3 = 0{,}95$) síce má kladný odhadnutý vplyv,
+ale nie je štatisticky signifikantné, čo môže byť spôsobené silnou
+koreláciou s ostatnými premennými.
+
+Z testov kontrastov vyplýva, že vplyv slobody a rodiny sa štatisticky
+líši od jednoduchých lineárnych kombinácií ostatných faktorov.
+Bonferroniho simultánne intervaly potvrdzujú dominanciu slobody
+oproti ekonomike aj rodine. Jednoduchšie povedané:
+\textit{v európskych krajinách je pocit slobody a silné rodinné
+väzby dôležitejšie pre šťastie ľudí ako samotná ekonomická úroveň}.
+
+\end{document}
